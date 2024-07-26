@@ -1,0 +1,19 @@
+1. What is the total amount each customer spent at the restaurant?
+
+What is the total amount each customer spent at the restaurant?
+To answer this question, we must keep in mind that the query should return the total for each customer individually. In other words, each customer should appear only once. Additionally, all the amounts spent by the customer should be summed up to get the total amount. Considering the architecture of our tables, we don't have the necessity/possibility to calculate this total amount without the expenses.
+
+First, we define the columns we want to show, which are customer_id and total amount. With this in mind, the following query was elaborated:
+
+SELECT sales.customer_id, sum(menu.price) AS total_amount
+FROM sales
+JOIN menu ON sales.product_id = menu.product_id
+GROUP BY sales.customer_id
+ORDER BY total_amount DESC; 
+
+After selecting the columns, I performed a join between the sales and menu tables where the product ids are the same, so that we can:
+
+Count the quantity of each product purchased
+Know the price of each product
+Sum the product price by the quantity purchased
+With this, we group everything by customer_id and order from the highest value to the lowest.
