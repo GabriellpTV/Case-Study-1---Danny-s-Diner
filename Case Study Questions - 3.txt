@@ -1,0 +1,51 @@
+3. What was the first item from the menu purchased by each customer?
+
+To get the first item purchased by each customer, the returned values need to have:
+
+1 - Customer ID
+2 -Product name
+3 - When it was purchased
+
+We can achieve this in two ways:
+
+# 1 Filter the search by the earliest date
+
+SELECT sales.customer_id, menu.product_name, MIN(sales.order_date)
+FROM sales
+JOIN menu ON sales.product_id = menu.product_id
+WHERE sales.order_date = (
+    SELECT MIN(order_date)
+    FROM sales
+    WHERE product_id = menu.product_id
+)
+GROUP BY customer_id, product_name
+
+First, we define the columns to be returned: customer ID, product name, and when the purchase was made. To get all the information, we perform a JOIN between the sales and menu tables where the product IDs are equal.
+
+With this, we can filter by the date where it is equal to the earliest date present in the order_date column. Then we just group by customer_id and product_name.
+
+Since on the first visit of customer A, they made two purchases, two products purchased will be returned.
+
+# 2 Create a CTE
+
+We create a CTE with the addition of a new column, where we order the orders by date for each customer_id.
+
+WITH ordered_sales AS (
+	SELECT
+		customer_id,
+        product_id,
+        ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY order_date) AS sale_order
+	FROM sales
+)
+
+This way, we have the order of purchase for each product.
+
+Then, we perform a query to get the customer ID and the name of the product purchased.
+
+SELECT ordered_sales.customer_id, menu.product_name
+FROM ordered_sales
+JOIN menu ON ordered_sales.product_id = menu.product_id
+WHERE sale_order = 1;
+
+After selecting the columns, we perform a JOIN between the ordered_sales and menu tables where the product IDs 
+are equal. Finally, we filter to ensure the query result is the first one in sale_order.
