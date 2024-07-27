@@ -1,0 +1,16 @@
+4. What is the most purchased item on the menu and how many times was it purchased by all customers?
+
+To answer this question, we need to select the product name and the quantity of sales across all customers. For this, we join the sales 
+and menu tables on the product IDs.
+
+SELECT menu.product_name, COUNT(sales.product_id) AS sales_quantity
+FROM sales
+JOIN menu ON sales.product_id = menu.product_id
+GROUP BY product_name
+ORDER BY 
+  sales_quantity DESC
+LIMIT 1;
+
+After that, I grouped the results by the number of sales in descending order. However, if we do just that, the query result will return all the products common 
+to both the sales and menu tables, along with their sales quantities. So, I added a limit of one row; this way, the query will only return 
+the highest value. In other words, the most sold product and its name.
