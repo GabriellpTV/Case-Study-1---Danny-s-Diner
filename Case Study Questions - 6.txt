@@ -1,0 +1,21 @@
+6. Which item was purchased first by the customer after they became a member?
+
+To answer this question, the first piece of information we need is when each customer became a member. After this, we 
+need to find all the sales that happened after the join date. For this, I create a CTE to show us this information:
+
+WITH member_sales AS (
+    SELECT sales.customer_id, sales.order_date, sales.product_id, members.join_date
+    FROM sales
+    JOIN members ON sales.customer_id = members.customer_id
+    WHERE sales.order_date >= members.join_date
+)
+
+After that, I perform a query to find the columns customer_id, order_date, and product_id where the order_date is the earliest:
+
+SELECT customer_id, order_date, product_id
+FROM member_sales
+WHERE (customer_id, order_date) IN (
+    SELECT customer_id, MIN(order_date)
+    FROM member_sales
+    GROUP BY customer_id
+);
