@@ -1,0 +1,20 @@
+7. Which item was purchased just before the customer became a member?
+
+The logic is basically the same as for question 6, where we create a CTE with the non_member_sales picking the sales that happened before the customers became members.
+
+WITH non_member_sales AS (
+    SELECT sales.customer_id, sales.order_date, sales.product_id, members.join_date
+    FROM sales
+    JOIN members ON sales.customer_id = members.customer_id
+    WHERE sales.order_date < members.join_date
+)
+
+After that, I need to select the customer_id, order_date, and product_id, where the order_date is the latest purchase made.
+
+SELECT customer_id, order_date, product_id
+FROM non_member_sales
+WHERE (customer_id, order_date) IN (
+    SELECT customer_id, MAX(order_date)
+    FROM non_member_sales
+    GROUP BY customer_id
+);
