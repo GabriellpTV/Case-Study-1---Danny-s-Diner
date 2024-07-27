@@ -1,0 +1,27 @@
+8. What is the total items and amount spent for each member before they became a member?
+
+For this, I create a CTE with the non-member sales (using the same logic as in the previous questions). The difference is a new column quantity 
+with the COUNT for the product IDs. After this, I do a JOIN between these non-member sales and the menu, so we can get the price for the products.
+
+WITH non_member_sales AS (
+    SELECT 
+    sales.customer_id, 
+    sales.product_id, 
+    COUNT(sales.product_id) as quantity,
+    menu.price
+    FROM sales
+    JOIN members ON sales.customer_id = members.customer_id
+    JOIN menu ON sales.product_id = menu.product_id
+	WHERE sales.order_date < members.join_date
+    GROUP BY customer_id, product_id, price
+)
+
+Then, we select the customer_id, sum the quantity of items, and sum the price multiplied by the quantity of items to get the amount_spent.
+
+SELECT 
+    customer_id, 
+    SUM(quantity) AS total_items, 
+    SUM(price * quantity) AS amount_spent
+FROM non_member_sales
+GROUP BY customer_id
+ORDER BY customer_id
