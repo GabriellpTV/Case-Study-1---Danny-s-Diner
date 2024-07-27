@@ -1,0 +1,86 @@
+5. Which item was the most popular for each customer?
+
+To answer this question, the query needs to return the customer ID and the product with the most sales. For this, 
+I created two CTEs. The first one will show the number of sales for each product separated for each customer.
+
+We can achieve this in two ways:
+
+# 1 returning all the longest values
+
+WITH sales_count AS (
+  SELECT 
+    customer_id, 
+    product_id, 
+    COUNT(product_id) AS count 
+  FROM 
+    sales 
+  GROUP BY 
+    customer_id, product_id
+) 
+
+After this, we need to rank the sales by the number of products sold, ranking by the most sales per customer.
+
+ranked_sales AS (
+  SELECT
+    customer_id,
+    product_id,
+    RANK() OVER (PARTITION BY customer_id ORDER BY count DESC) AS position
+  FROM
+    sales_count
+)
+
+Finally, we can select the columns with the customer ID and the most popular product. For this, I did a JOIN between ranked_sales and menu on the 
+product_id where the ranking is equal to one. This will return the customer and the product with the highest ranking.
+
+SELECT ranked_sales.customer_id, menu.product_name
+FROM ranked_sales 
+JOIN menu ON ranked_sales.product_id = menu.product_id
+WHERE
+  position = 1
+ORDER BY customer_id
+
+This returns the products with the ranking 1, but for customer B all three products were sold in the same quantity, so all have the ranking 1 and because of 
+this the customer will return all three products, as we don't have a single most popular one.
+
+One solution for this is to insert product_id in the ORDER BY clause in the RANK() function; this will return just one product:
+
+ranked_sales AS (
+  SELECT
+    customer_id,
+    product_id,
+    sales_count,
+    RANK() OVER (PARTITION BY customer_id ORDER BY sales_count DESC, product_id) AS position
+  FROM
+    sales_count
+)
+
+# 2 returned value only if a preferred one exists
+
+The initial steps of this solution are the same as the previous one, but after creating sales_count and ranked_sales, we create two more CTEs. The 
+first one will tell us how many times the items in the top position of the ranking appeared.
+
+ranked_sales_unique AS (
+  SELECT 
+    customer_id, 
+    position, 
+    COUNT(position) AS quantity
+  FROM 
+    ranked_sales 
+  WHERE 
+    position = (SELECT MIN(position) FROM ranked_sales) 
+  GROUP BY 
+    customer_id, position
+)
+
+With this, we can join the ranking table with the column that indicates how many times that ranking position appeared. Finally, we perform a query that returns 
+the customer ID and the name of the preferred product.
+
+To do this, we select the ID and name columns and perform a LEFT JOIN with the menu table. The LEFT JOIN is used so that all values from the ranked_sales_quant 
+table are returned, even if the customer does not have a preferred product, in which case it will appear as NULL. In the LEFT JOIN, we specify that the product IDs 
+must match and the position in the ranking must be 1, and a WHERE clause for the quantity of times the position appeared being equal to 1.
+
+SELECT ranked_sales_quant.customer_id, menu.product_name
+FROM ranked_sales_quant 
+LEFT JOIN menu ON ranked_sales_quant.product_id = menu.product_id AND ranked_sales_quant.position = 1
+WHERE ranked_sales_quant.quantity = 1
+GROUP BY customer_id, product_name
