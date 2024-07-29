@@ -1,0 +1,27 @@
+9. If each $1 spent equates to 10 points and sushi has a 2x points multiplier - how many points would each customer have?
+
+First, we create a CTE to calculate the number of points. To do this, we join the sales and menu tables where the product IDs are equal.
+Then, I performed a CASE, where if the product name is sushi, I make the points equal to price x 20, and if not, the points are price x 10.
+
+WITH sales_points AS (
+	SELECT
+		sales.customer_id,
+        sales.order_date,
+        sales.product_id,
+        menu.product_name,
+        menu.price,
+        CASE
+			WHEN menu.product_name = 'sushi' THEN menu.price * 20
+            ELSE menu.price * 10
+		END AS points
+        FROM sales
+		JOIN menu ON sales.product_id = menu.product_id
+)
+
+Finally, I made a select to get only the columns customer_id and summed the number of points per customer_id.
+
+SELECT 
+	customer_id,
+	SUM(points) AS total_points
+FROM sales_points
+GROUP BY customer_id
