@@ -1,0 +1,33 @@
+10. In the first week after a customer joins the program (including their join date) they earn 2x points on all items, not just sushi - 
+how many points do customer A and B have at the end of January?
+
+Similar to the previous question, we first create a CTE to calculate the points, but with a difference in how these points are calculated.
+
+WITH sales_points AS (
+	SELECT
+		sales.customer_id,
+        sales.order_date,
+        sales.product_id,
+        menu.product_name,
+        menu.price,
+        CASE
+			WHEN menu.product_name = 'sushi' THEN menu.price * 20
+            WHEN sales.customer_id = members.customer_id AND sales.order_date >= members.join_date AND sales.order_date < members.join_date + 7 THEN menu.price * 20
+            ELSE menu.price * 10
+		END AS points
+        FROM sales
+		JOIN menu ON sales.product_id = menu.product_id
+        JOIN members ON sales.customer_id = members.customer_id
+)
+
+In our CASE statement, we set the rule to apply the multiplier based on the join_date to capture the first week after the customer joins, in 
+addition to sushi. Also, the JOIN is an inner join because we do not want the data for Customer C, as they are not a member. Finally, we perform a simple 
+select that retrieves the customer_id and sums the points, ordering by customer_id.
+
+SELECT 
+    customer_id,
+    SUM(points) AS total_points
+FROM sales_points
+WHERE MONTH(order_date) IN (1)
+GROUP BY customer_id
+ORDER BY customer_id
